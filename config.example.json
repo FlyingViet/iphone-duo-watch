@@ -1,0 +1,14 @@
+{
+  "location": "",
+  "maxMiles": 30,
+  "storage": ["512GB", "1TB"],
+  "colors": ["Star White", "Night Sky"],
+  "carrier": "unlocked",
+  "checkEveryMinutes": [2, 3],
+  "realertAfterMinutes": 20,
+  "failAlertAfterMinutes": 30,
+  "endDate": "",
+  "chromePath": "",
+  "stateDir": "state",
+  "launchAgentLabel": "local.iphone-duo-watch"
+}

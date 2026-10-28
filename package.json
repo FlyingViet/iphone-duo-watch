@@ -1,0 +1,18 @@
+{
+  "name": "iphone-duo-watch",
+  "version": "1.0.0",
+  "description": "Get a push on your phone the moment an iPhone Duo is available for in-store pickup near you.",
+  "type": "module",
+  "license": "MIT",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "setup": "node setup.mjs",
+    "start": "node duo-watch.mjs",
+    "once": "node duo-watch.mjs --once",
+    "test-alert": "node duo-watch.mjs --test-alert",
+    "install-agent": "node agent.mjs install",
+    "uninstall-agent": "node agent.mjs uninstall",
+    "status": "node agent.mjs status",
+    "test": "node --test tests/"
+  }
+}
