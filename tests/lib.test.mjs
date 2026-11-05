@@ -1,13 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   CATALOG, buyUrl, diffAvailable, formatAlert, fulfillmentQuery, parseAvailability, parseEnv,
   pickupQuery, resolveConfig, selectParts,
 } from '../lib.mjs';
-import { plist } from '../agent.mjs';
+import { plist, stableNodePath } from '../agent.mjs';
 import { channels } from '../notify.mjs';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -117,4 +118,20 @@ test('LaunchAgent plist runs the watcher from the repo and escapes paths', () =>
   assert.match(p, /<string>local\.test<\/string>/);
   assert.match(p, /<string>\/opt\/node &amp; co\/bin\/node<\/string><string>\/repo\/duo-watch\.mjs<\/string>/);
   assert.match(p, /<string>\/repo\/state\/launchd\.log<\/string>/);
+});
+
+test('LaunchAgent uses Homebrew’s stable node link instead of the versioned Cellar path', t => {
+  const brew = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'brew-'));
+  t.after(() => fs.rmSync(brew, { recursive: true, force: true }));
+  const real = path.join(brew, 'Cellar/node/26.1.0/bin/node');
+  fs.mkdirSync(path.dirname(real), { recursive: true });
+  fs.writeFileSync(real, '');
+  fs.mkdirSync(path.join(brew, 'bin'));
+  fs.symlinkSync('../Cellar/node/26.1.0/bin/node', path.join(brew, 'bin/node'));
+  assert.equal(stableNodePath(real), path.join(brew, 'bin/node'));
+  fs.writeFileSync(path.join(brew, 'Cellar/node/26.1.0/bin/other'), '');
+  fs.rmSync(path.join(brew, 'bin/node'));
+  fs.symlinkSync('../Cellar/node/26.1.0/bin/other', path.join(brew, 'bin/node'));
+  assert.equal(stableNodePath(real), real);
+  assert.equal(stableNodePath('/usr/local/bin/node'), '/usr/local/bin/node');
 });

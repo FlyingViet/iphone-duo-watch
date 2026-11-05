@@ -13,7 +13,16 @@ const xml = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(
 const plistPath = label => path.join(os.homedir(), 'Library/LaunchAgents', `${label}.plist`);
 const domain = () => `gui/${process.getuid()}`;
 
-export function plist(cfg, nodePath = process.execPath, root = ROOT) {
+// Homebrew reports node's versioned Cellar path, which disappears on the next `brew upgrade`;
+// point the LaunchAgent at Homebrew's stable bin/node link when it is the same binary.
+export function stableNodePath(execPath = process.execPath) {
+  const m = execPath.match(/^(.+)\/Cellar\/[^/]+\/[^/]+\/bin\/node$/);
+  if (!m) return execPath;
+  const link = `${m[1]}/bin/node`;
+  try { return fs.realpathSync(link) === fs.realpathSync(execPath) ? link : execPath; } catch { return execPath; }
+}
+
+export function plist(cfg, nodePath = stableNodePath(), root = ROOT) {
   const log = path.join(cfg.stateDir, 'launchd.log');
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
