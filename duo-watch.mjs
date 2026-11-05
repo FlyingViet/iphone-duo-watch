@@ -20,6 +20,7 @@ const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const PAGE_URL = 'https://www.apple.com/shop/buy-iphone';
 const PAGE_REFRESH_MS = 30 * 60_000;
 const MAX_BACKOFF_MS = 15 * 60_000;
+const CHROME_START_TIMEOUT_MS = 60_000;
 
 const CHROME_CANDIDATES = [
   '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
@@ -94,14 +95,16 @@ export class Browser {
       '--no-first-run', '--no-default-browser-check', '--window-size=1280,900', 'about:blank',
     ], { stdio: 'ignore' });
     fs.writeFileSync(this.pidFile, String(this.proc.pid));
+    // A busy Mac (heavy swap, background QoS under launchd) can take well over 15 s to start Chrome.
+    const deadline = Date.now() + CHROME_START_TIMEOUT_MS;
     let port;
-    for (let i = 0; i < 60 && !port; i++) {
+    while (!port && Date.now() < deadline && this.proc.exitCode === null) {
       await sleep(250);
       try { port = Number(fs.readFileSync(portFile, 'utf8').split('\n')[0]); } catch {}
     }
-    if (!port) throw new Error('Chrome did not expose DevTools');
+    if (!port) throw new Error(`Chrome did not expose DevTools within ${CHROME_START_TIMEOUT_MS / 1000} s`);
     let page;
-    for (let i = 0; i < 40 && !page; i++) {
+    while (!page && Date.now() < deadline) {
       try { page = (await (await fetch(`http://127.0.0.1:${port}/json`)).json()).find(t => t.type === 'page'); } catch {}
       if (!page) await sleep(250);
     }
